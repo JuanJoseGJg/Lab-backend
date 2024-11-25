@@ -25,6 +25,7 @@ class VideoRepositoryTest {
         videoRepository = mock(VideoRepository.class);  // Usamos Mockito para simular el repositorio
         culturemediaService = new CulturemediaServiceImpl(videoRepository);  // Inyectamos el mock
     }
+
     @Test
     void when_FindByTitle_all_videos_with_matching_title_should_be_returned_successfully() {
         List<Video> videos = List.of(
@@ -70,8 +71,16 @@ class VideoRepositoryTest {
 
     @Test
     void when_FindAll_all_videos_should_be_returned_successfully() {
-        List<Video> videos = videoRepository.findAll( );
-        assertEquals(6, videos.size());
+        List<Video> videos = List.of(
+                new Video("01", "Video 1", "Descripción 1", 4.5),
+                new Video("02", "Video 2", "Descripción 2", 5.0),
+                new Video("03", "Video 3", "Descripción 3", 3.0)
+        );
+
+        when(videoRepository.findAll()).thenReturn(videos);
+
+        List<Video> result = culturemediaService.findAll();
+        assertEquals(3, result.size());
     }
 
     @Test
@@ -81,20 +90,34 @@ class VideoRepositoryTest {
         Executable executable = () -> culturemediaService.findAll();
         assertThrows(VideoNotFoundException.class, executable, "No videos found.");
     }
+
     @Test
     void when_FindByTitle_only_videos_which_contains_the_word_in_the_title_should_be_returned_successfully() {
-        List<Video> videos = videoRepository.find( "Clic" );
-        assertEquals(2, videos.size());
+        List<Video> videos = List.of(
+                new Video("01", "Clic en Título", "Descripción 1", 4.5),
+                new Video("02", "Otro Clic", "Descripción 2", 5.0)
+        );
+
+        when(videoRepository.find("Clic")).thenReturn(videos);
+
+        List<Video> result = culturemediaService.findByTitle("Clic");
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(video -> video.title().contains("Clic")));
     }
 
     @Test
     void when_FindByTitle_does_not_match_any_video_an_empty_list_should_be_returned_successfully() {
-        assert(false);
+        when(videoRepository.find("Nonexistent")).thenReturn(Collections.emptyList());
+
+        List<Video> result = culturemediaService.findByTitle("Nonexistent");
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void when_FindByDuration_does_not_match_any_video_an_empty_list_should_be_returned_successfully() {
-        assert(false);
-    }
+        when(videoRepository.find(10.0, 15.0)).thenReturn(Collections.emptyList());
 
-}
+        List<Video> result = culturemediaService.findByDuration(10.0, 15.0);
+        assertTrue(result.isEmpty());
+    }
+}}
